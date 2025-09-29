@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="F:\UL\delayD">
+    <title>PIC Dashboard Creator </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            border: 3px dashed #4facfe;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: #00f2fe;
+            background: rgba(79, 172, 254, 0.05);
+        }
+
+        .upload-section.dragover {
+            border-color: #00f2fe;
+            background: rgba(79, 172, 254, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #4facfe;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .settings-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .settings-panel.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .settings-row label {
+            font-weight: 600;
+            color: #333;
+            min-width: 120px;
+        }
+
+        .settings-row input, .settings-row select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .settings-row input:focus, .settings-row select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .process-button {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+            font-weight: 600;
+        }
+
+        .process-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .process-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            background: #f0f0f0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .log-section {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .log-section.show {
+            display: block;
+        }
+
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: #51cf66;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .file-info {
+            background: #e3f2fd;
+            border: 1px solid #4facfe;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .toggle-section {
+            margin-bottom: 20px;
+        }
+
+        .toggle-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-button:hover {
+            background: #5a6268;
+        }
+
+        .data-preview {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background: #4facfe;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .powerbi-notice {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .powerbi-notice h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .settings-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ PIC Dashboard Creator </h1>
+            <p>no programming required!</p>
+        </div>
+        
+        <div class="content">
+            <div class="powerbi-notice">
+                <h3>Power BI Ready</h3>
+                <p>This processor ensures clean data types, consistent formatting, and proper null handling for seamless Power BI integration</p>
+            </div>
+
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📁</div>
+                <h3>Drop your CSV file here or click to browse</h3>
+                <p>Supported format: CSV files with flight delay data</p>
+                <input type="file" id="fileInput" class="file-input" accept=".csv">
+                <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                    Choose File
+                </button>
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <h4>📊 File Information</h4>
+                <div id="fileDetails"></div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="toggle-section">
+                <button class="toggle-button" id="toggleSettings">⚙️ Advanced Settings</button>
+            </div>
+
+            <div class="settings-panel" id="settingsPanel">
+                <h3>🔧 Processing Settings</h3>
+                <div class="settings-row">
+                    <label>Output Filename:</label>
+                    <input type="text" id="outputFilename" value="" placeholder="Leave empty for auto-generated name">
+                    <small>Custom name for the processed file</small>
+                </div>
+                
+                <div class="settings-row">
+                    <label>Power BI Optimization:</label>
+                    <input type="checkbox" id="powerBIOptimization" checked>
+                    <small>Ensures data types are Power BI compatible</small>
+                </div>
+            </div>
+
+            <button class="process-button" id="processButton" disabled>
+                🚀 Process CSV File with TTL DEP Logic
+            </button>
+
+            <div class="progress-section" id="progressSection">
+                <h4>Processing...</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">Initializing...</div>
+            </div>
+
+            <div class="log-section" id="logSection">
+                <div id="logContent"></div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <h3>✅ Processing Complete!</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+                <div style="text-align: center;">
+                    <a class="download-button" id="downloadButton" download>
+                        📥 Download Processed File
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csvData = null;
+        let processedData = null;
+        let originalFilename = '';
+
+        // Initialize drag and drop functionality
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Toggle settings panel
+        document.getElementById('toggleSettings').addEventListener('click', () => {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('show');
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showError('Please select a valid CSV file.');
+                return;
+            }
+
+            originalFilename = file.name.replace('.csv', '');
+            document.getElementById('outputFilename').value = originalFilename + '_processed.csv';
+
+            showFileInfo(file);
+            
+            Papa.parse(file, {
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        showError('Error parsing CSV: ' + results.errors[0].message);
+                        log(`❌ CSV Parsing Errors: ${results.errors.map(e => e.message).join('; ')}`);
+                        return;
+                    }
+                    
+                    csvData = results.data;
+                    //log(`📥 Loaded CSV with ${csvData.length} rows`);
+                    validateAndEnableProcessing();
+                    showSuccess('File loaded successfully! Ready to process.');
+                },
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: header => header.trim()
+            });
+        }
+
+        function showFileInfo(file) {
+            const fileInfo = document.getElementById('fileInfo');
+            const fileDetails = document.getElementById('fileDetails');
+            
+            fileDetails.innerHTML = `
+                <p><strong>📁 Name:</strong> ${file.name}</p>
+                <p><strong>📏 Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                <p><strong>📅 Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
+            `;
+            
+            fileInfo.classList.add('show');
+        }
+
+        function validateAndEnableProcessing() {
+            if (!csvData || csvData.length === 0) {
+                showError('No data found in the CSV file.');
+                log('❌ No data found in CSV');
+                return;
+            }
+
+            // Check for required columns
+            const headers = Object.keys(csvData[0]);
+            const requiredCols = ['DATE', 'FLT', 'TYPE', 'REG', 'DEP', 'ARR'];
+            const optionalCols = ['DELAY type', 'TTL DEP', 'Status', 'DLY1Arr', 'Sub1Arr', 'TTL ARR'];
+            const missingCols = requiredCols.filter(col => !headers.includes(col));
+
+            if (missingCols.length > 0) {
+                showError(`Missing required columns: ${missingCols.join(', ')}`);
+                log(`❌ Missing required columns: ${missingCols.join(', ')}`);
+                return;
+            }
+
+            // Log which optional columns were found
+            const foundOptionalCols = optionalCols.filter(col => headers.includes(col));
+            if (foundOptionalCols.length > 0) {
+                log(`📊 Found optional columns: ${foundOptionalCols.join(', ')}`);
+            }
+
+            // Check for delay columns
+            const delayGroups = [];
+            for (let i = 1; i <= 8; i++) {
+                const group = [`C${i}`, `DLY${i}`, `Sub${i}`];
+                if (group.every(col => headers.includes(col))) {
+                    delayGroups.push(i);
+                }
+            }
+
+            if (delayGroups.length === 0) {
+                showError('No valid delay column groups (C1, DLY1, Sub1, etc.) found.');
+                log('❌ No valid delay column groups found');
+                return;
+            }
+
+            document.getElementById('processButton').disabled = false;
+            log(`✅ File validation passed. Found ${csvData.length} rows and delay groups: ${delayGroups.join(', ')}`);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 3000);
+        }
+
+        function log(message) {
+            const logSection = document.getElementById('logSection');
+            const logContent = document.getElementById('logContent');
+            
+            logSection.classList.add('show');
+            logContent.innerHTML += `${new Date().toLocaleString()}: ${message}\n`;
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+
+        function updateProgress(percentage, text) {
+            const progressSection = document.getElementById('progressSection');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressSection.classList.add('show');
+            progressFill.style.width = percentage + '%';
+            progressText.textContent = text;
+        }
+
+        // Helper function to add weeks to a date
+        function addWeeksToDate(date, weeks) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + weeks * 7);
+            return result;
+        }
+
+        // Helper function to get weekday name from date
+        function getWeekdayName(date) {
+            const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return weekdays[date.getDay()];
+        }
+
+        // Helper function to parse date from various formats
+        function parseFlightDate(dateStr, rowIndex) {
+            if (!dateStr) {
+                log(`⚠️ Warning: Empty date in row ${rowIndex + 1}`);
+                return null;
+            }
+            
+            const cleanDateStr = String(dateStr).trim();
+            
+            // Try JavaScript's built-in Date parsing first
+            let date = new Date(cleanDateStr);
+            if (!isNaN(date)) {
+                return date;
+            }
+            
+            // Define multiple date format regex patterns
+            const formats = [
+                { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, parser: (match) => new Date(match[3], match[2] - 1, match[1]) }, // DD/MM/YYYY
+                { regex: /^(\d{1,2})-(\d{1,2})-(\d{4})$/, parser: (match) => new Date(match[3], match[2] - 1, match[1]) }, // DD-MM-YYYY
+                { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})$/, parser: (match) => new Date(match[1], match[2] - 1, match[3]) }, // YYYY-MM-DD
+                { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/, parser: (match) => new Date(`20${match[3]}`, match[2] - 1, match[1]) }, // DD/MM/YY
+                { regex: /^(\d{1,2})-(\d{1,2})-(\d{2})$/, parser: (match) => new Date(`20${match[3]}`, match[2] - 1, match[1]) }, // DD-MM-YY
+                { regex: /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/, parser: (match) => new Date(match[1], match[2] - 1, match[3]) }, // YYYY/MM/DD
+            ];
+            
+            for (const format of formats) {
+                const match = cleanDateStr.match(format.regex);
+                if (match) {
+                    date = format.parser(match);
+                    if (!isNaN(date)) {
+                        return date;
+                    }
+                }
+                
+            }
+            
+            log(`⚠️ Warning: Failed to parse date "${cleanDateStr}" in row ${rowIndex + 1}`);
+            return null;
+        }
+
+        function parseSpecificDateFormat(dateStr, format) {
+            const cleanDateStr = dateStr.trim();
+            
+            switch (format) {
+                case 'DD/MM/YYYY':
+                    const ddmmyyyy = cleanDateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                    if (ddmmyyyy) return new Date(ddmmyyyy[3], ddmmyyyy[2] - 1, ddmmyyyy[1]);
+                    break;
+                case 'MM/DD/YYYY':
+                    const mmddyyyy = cleanDateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                    if (mmddyyyy) return new Date(mmddyyyy[3], mmddyyyy[1] - 1, mmddyyyy[2]);
+                    break;
+                case 'YYYY-MM-DD':
+                    const yyyymmdd = cleanDateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                    if (yyyymmdd) return new Date(yyyymmdd[1], yyyymmdd[2] - 1, yyyymmdd[3]);
+                    break;
+            }
+            
+            return null;
+        }
+
+        // Helper function to parse delay value and convert to minutes
+        function parseDelayToMinutes(delayValue) {
+            if (!delayValue || delayValue === '0' || delayValue === '') return 0;
+            
+            const dlyValue = String(delayValue).trim();
+            
+            if (dlyValue.includes(':')) {
+                const parts = dlyValue.split(':').map(part => parseInt(part, 10) || 0);
+                if (parts.length === 3) {
+                    // HH:MM:SS format, treat as hours, minutes, seconds
+                    const hours = parts[0];
+                    const minutes = parts[1];
+                    const seconds = parts[2];
+                    return hours * 60 + minutes + (seconds / 60);
+                } else if (parts.length === 2) {
+                    // HH:MM format, treat as hours and minutes
+                    const hours = parts[0];
+                    const minutes = parts[1];
+                    return hours * 60 + minutes;
+                }
+            } else {
+                // Assume it's a numeric value in minutes
+                const minutes = parseFloat(dlyValue);
+                if (isNaN(minutes)) {
+                    log(`⚠️ Warning: Invalid delay value "${dlyValue}" treated as 0 minutes`);
+                    return 0;
+                }
+                return minutes;
+            }
+            
+            return 0;
+        }
+
+        // Helper function to convert minutes to HH:MM format
+        function minutesToHHMM(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = Math.floor(totalMinutes % 60);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Helper function to evaluate if delay is strictly greater than 15 minutes
+        function evaluateDelayOver15Minutes(delayValue) {
+            const totalMinutes = parseDelayToMinutes(delayValue);
+            return totalMinutes > 15;
+        }
+
+        // Helper function to calculate CAT based on TTL DEP
+        function calculateCAT(totalMinutes) {
+            if (totalMinutes < 16) return 'Ontime';
+            if (totalMinutes < 31) return '16mto30m';
+            if (totalMinutes < 60) return '31mto01h';
+            if (totalMinutes < 120) return '1hto2h';
+            if (totalMinutes < 240) return '2hto4h';
+            if (totalMinutes < 360) return '4hto6h';
+            return 'Above6hr';
+        }
+
+        // Custom status calculation logic based on TTL DEP and DYL Series
+        function calculateCustomStatus(delayValue, dylSeries) {
+            const totalMinutes = parseDelayToMinutes(delayValue);
+            const isOver15 = totalMinutes > 15;
+            if (dylSeries === "1" || dylSeries === "SINGLE") {
+                return { status: isOver15 ? "> 15mts Delayed" : "Ontime", totalMinutes };
+            } else {
+                return { status: "", totalMinutes };
+            }
+        }
+
+        // Optimize data for Power BI
+        function optimizeForPowerBI(data) {
+            if (!document.getElementById('powerBIOptimization').checked) {
+                return data;
+            }
+
+            return data.map(row => {
+                const optimizedRow = {};
+                
+                for (const [key, value] of Object.entries(row)) {
+                    let optimizedValue = value;
+                    
+                    if (value === null || value === undefined || value === '') {
+                        optimizedValue = '';
+                    } else {
+                        optimizedValue = value.toString().trim();
+                    }
+                    
+                    switch (key) {
+                        case 'DATE':
+                            const date = parseFlightDate(value, 0);
+                            optimizedValue = date ? date.toISOString().split('T')[0] : '';
+                            break;
+                            
+                        case 'TTL DEP':
+                        case 'TTL ARR':
+                            if (optimizedValue && optimizedValue !== '0:00') {
+                                const minutes = parseDelayToMinutes(optimizedValue);
+                                optimizedValue = minutesToHHMM(minutes);
+                            } else {
+                                optimizedValue = '00:00';
+                            }
+                            break;
+                            
+                        case 'DYL Series':
+                            if (optimizedValue === 'SINGLE' || optimizedValue === '1') {
+                                optimizedValue = 'SINGLE';
+                            } else if (optimizedValue && !isNaN(parseInt(optimizedValue))) {
+                                optimizedValue = parseInt(optimizedValue).toString();
+                            }
+                            break;
+                            
+                        case 'Status':
+                            if (optimizedValue === '> 15mts Delayed') {
+                                optimizedValue = 'Delayed';
+                            } else if (optimizedValue === 'Ontime') {
+                                optimizedValue = 'Ontime';
+                            } else {
+                                optimizedValue = '';
+                            }
+                            break;
+                            
+                        case 'DELAY type':
+                            if (optimizedValue === 'NAR' || optimizedValue === 'AR') {
+                                // Keep as is
+                            } else {
+                                optimizedValue = '';
+                            }
+                            break;
+                    }
+                    
+                    optimizedRow[key] = optimizedValue;
+                }
+                
+                return optimizedRow;
+            });
+        }
+
+        // Process CSV button click handler
+        document.getElementById('processButton').addEventListener('click', async () => {
+            if (!csvData) {
+                showError('Please load a CSV file first.');
+                log('❌ No CSV data loaded');
+                return;
+            }
+
+            document.getElementById('processButton').disabled = true;
+            document.getElementById('logSection').innerHTML = '<div id="logContent"></div>';
+            
+            try {
+                updateProgress(10, 'Starting processing...');
+                //log('🔄 Starting CSV transformation with TTL DEP and CAT logic...');
+                
+                const stats = await processCSVData();
+                
+                if (!processedData || processedData.length === 0) {
+                    throw new Error('No data was processed. Check input data and logs.');
+                }
+                
+                updateProgress(100, 'Processing complete!');
+                showResults(stats);
+                showSuccess('Processing completed successfully!');
+                
+            } catch (error) {
+                showError('Processing failed: ' + error.message);
+                log('❌ Error: ' + error.message);
+            } finally {
+                document.getElementById('processButton').disabled = false;
+            }
+        });
+
+        async function processCSVData() {
+            const svcTypeDefault = '';
+            
+            updateProgress(20, 'Analyzing data structure...');
+            
+            // Add SVC Type column if it doesn't exist
+            if (!Object.keys(csvData[0]).includes('SVC Type')) {
+                csvData.forEach(row => {
+                    row['SVC Type'] = svcTypeDefault;
+                });
+                //log(`🔧 Added SVC Type column with default value: ${svcTypeDefault}`);
+            }
+
+            updateProgress(30, 'Processing rows...');
+            
+            const fixedCols = ['DATE', 'FLT', 'TYPE', 'SVC Type', 'REG', 'DEP', 'ARR', 'STD'];
+            const additionalCols = ['DELAY type', 'TTL DEP', 'Status', 'DLY1A', 'DLY2A', 'TTL ARR'];
+            const delayGroups = [];
+            
+            // Find available delay groups
+            for (let i = 1; i <= 8; i++) {
+                const group = [`C${i}`, `DLY${i}`, `Sub${i}`];
+                if (group.every(col => Object.keys(csvData[0]).includes(col))) {
+                    delayGroups.push(group);
+                }
+            }
+
+            //log(`📊 Found ${delayGroups.length} delay column groups`);
+            
+            const longData = [];
+            let skippedDepArr = 0;
+            let rowsWithDelays = 0;
+            let rowsWithoutDelays = 0;
+            let delayedOver15Min = 0;
+            
+            updateProgress(40, 'Transforming data...');
+
+            for (let idx = 0; idx < csvData.length; idx++) {
+                if (idx % 100 === 0) {
+                    updateProgress(40 + (idx / csvData.length) * 40, `Processing row ${idx + 1} of ${csvData.length}...`);
+                    await new Promise(resolve => setTimeout(resolve, 1)); // Allow UI to update
+                }
+
+                const row = csvData[idx];
+                const base = {};
+                
+                // Copy fixed columns
+                fixedCols.forEach(col => {
+                    base[col] = row[col] || '';
+                });
+
+                // Copy additional columns, mapping Sub1Arr to DLY2A
+                additionalCols.forEach(col => {
+                    if (col === 'DLY1A') {
+                        base[col] = row.hasOwnProperty('DLY1Arr') ? (row['DLY1Arr'] || '') : '';
+                    } 
+                });
+
+                // Copy additional columns, mapping DLY1Arr to DLY1A 
+                additionalCols.forEach(col => {
+                    if (col === 'DLY2A') {
+                        base[col] = row.hasOwnProperty('DLY2Arr') ? (row['DLY2Arr'] || '') : '';
+                    } 
+                });
+
+                // Calculate TTL ARR as the sum of DLY1A and DLY2A in minutes
+                const dly1AMinutes = parseDelayToMinutes(base['DLY1A']);
+                const dly2AMinutes = parseDelayToMinutes(base['DLY2A']);
+                const ttlArrMinutes = dly1AMinutes + dly2AMinutes;
+                base['TTL ARR'] = minutesToHHMM(ttlArrMinutes);
+
+                // Skip rows where DEP == ARR
+                if (base.DEP && base.ARR && String(base.DEP).trim() === String(base.ARR).trim()) {
+                    skippedDepArr++;
+                    if (skippedDepArr <= 3) {
+                        log(`⏭️ Skipped row ${idx + 1}: DEP=${base.DEP}, ARR=${base.ARR}`);
+                    }
+                    continue;
+                }
+
+                const currentRowDelays = [];
+                let rowHasDelay = false;
+
+                // Process delay groups
+                for (const group of delayGroups) {
+                    const dlyVal = row[group[1]]; // DLY column
+                    if (dlyVal && String(dlyVal).trim() !== '' && String(dlyVal).trim() !== '0') {
+                        rowHasDelay = true;
+                        const newRow = { ...base };
+                        newRow.C = row[group[0]] || '';
+                        newRow.DLY = row[group[1]] || '';
+                        newRow.Sub = row[group[2]] || '';
+
+                        // DELAY type calculation (updated to match Excel formula)
+                        const narCodes = ["A", "G", "H", "L", "P", "U", "W", "X"];
+                        if (newRow.Sub && narCodes.includes(String(newRow.Sub).trim().toUpperCase())) {
+                            newRow["DELAY type"] = "NAR";
+                        } else {
+                            newRow["DELAY type"] = "AR";
+                        }
+
+                        newRow['DYL Series'] = '';
+                        newRow['Primary or consq'] = '';
+                        
+                        // Calculate Weekday from DATE column
+                        const flightDate = parseFlightDate(newRow.DATE, idx);
+                        newRow.Weekday = flightDate ? getWeekdayName(flightDate) : '';
+                        
+                        newRow.CAT = '';
+
+                        currentRowDelays.push(newRow);
+                    }
+                }
+
+                if (!rowHasDelay) {
+                    // No delays
+                    rowsWithoutDelays++;
+                    const newRow = { ...base };
+                    newRow.C = '';
+                    newRow.DLY = '';
+                    newRow.Sub = '';
+                    newRow['DYL Series'] = 'SINGLE';
+                    newRow['Primary or consq'] = '';
+                    
+                    // Calculate Weekday from DATE column
+                    const flightDate = parseFlightDate(newRow.DATE, idx);
+                    newRow.Weekday = flightDate ? getWeekdayName(flightDate) : '';
+                    
+                    newRow['TTL DEP'] = '0:00';
+                    newRow['Status'] = 'Ontime';
+                    newRow['CAT'] = 'Ontime'; // Set CAT for no-delay rows
+                    longData.push(newRow);
+                } else {
+                    // Has delays - process TTL DEP and CAT based on DYL Series logic
+                    rowsWithDelays++;
+                    if (currentRowDelays.length === 1) {
+                        // Single delay row
+                        const delayRow = currentRowDelays[0];
+                        delayRow['DYL Series'] = 'SINGLE';
+                        const dlyMinutes = parseDelayToMinutes(delayRow['DLY']);
+                        delayRow['TTL DEP'] = minutesToHHMM(dlyMinutes);
+                        
+                        // Calculate status based on TTL DEP and DYL Series
+                        const statusResult = calculateCustomStatus(delayRow['TTL DEP'], delayRow['DYL Series']);
+                        delayRow['Status'] = statusResult.status;
+                        delayRow['CAT'] = calculateCAT(statusResult.totalMinutes); // Calculate CAT
+                        if (statusResult.status === "> 15mts Delayed") {
+                            delayedOver15Min++;
+                        }
+                        longData.push(delayRow);
+                    } else {
+                        // Multiple delay rows - calculate cumulative totals
+                        let cumulativeMinutes = 0;
+                        const delayValues = [];
+                        
+                        // First pass: collect and parse all delay values
+                        for (const delayRow of currentRowDelays) {
+                            const dlyMinutes = parseDelayToMinutes(delayRow['DLY']);
+                            delayValues.push({ row: delayRow, minutes: dlyMinutes });
+                            cumulativeMinutes += dlyMinutes;
+                        }
+                        
+                        // Second pass: assign TTL DEP, Status, and CAT
+                        currentRowDelays.forEach((delayRow, i) => {
+                            delayRow['DYL Series'] = String(i + 1);
+                            
+                            if (i === 0) {
+                                // First row: TTL DEP = DLY
+                                const dlyMinutes = parseDelayToMinutes(delayRow['DLY']);
+                                delayRow['TTL DEP'] = minutesToHHMM(cumulativeMinutes);
+                            } else {
+                                // Subsequent rows: TTL DEP = cumulative total in minutes
+                                delayRow['TTL DEP'] = '';
+                                //minutesToHHMM(cumulativeMinutes);
+                            }
+                            
+                            // Calculate status based on TTL DEP and DYL Series
+                            const statusResult = calculateCustomStatus(delayRow['TTL DEP'], delayRow['DYL Series']);
+                            delayRow['Status'] = statusResult.status;
+                            delayRow['CAT'] = calculateCAT(statusResult.totalMinutes); // Calculate CAT
+                            if (statusResult.status === "> 15mts Delayed") {
+                                delayedOver15Min++;
+                            }
+                        });
+                        longData.push(...currentRowDelays);
+                    }
+                }
+            }
+
+            updateProgress(90, 'Finalizing results...');
+
+            // Sort by DYL Series: SINGLE first, then numeric values in ascending order
+            // longData.sort((a, b) => {
+            //     const aSeries = a['DYL Series'];
+            //     const bSeries = b['DYL Series'];
+            //     if (aSeries === 'SINGLE' && bSeries !== 'SINGLE') return -1;
+            //     if (bSeries === 'SINGLE' && aSeries !== 'SINGLE') return 1;
+            //     if (aSeries === 'SINGLE' && bSeries === 'SINGLE') return 0;
+            //     return parseInt(aSeries) - parseInt(bSeries);
+            // });
+
+            // Ensure proper column ordering in the final data
+            const desiredColumnOrder = [
+                'DATE', 'FLT', 'TYPE', 'SVC Type', 'REG', 'DEP', 'ARR', 'STD',
+                'C', 'DLY', 'Sub',
+                'DELAY type', 'TTL DEP', 'Status', 'DLY1A', 'DLY2A', 'TTL ARR',
+                'DYL Series', 'Primary or consq', 'Weekday', 'CAT'
+            ];
+
+            // Reorder each row to match desired column order
+            const reorderedData = longData.map(row => {
+                const reorderedRow = {};
+                desiredColumnOrder.forEach(col => {
+                    reorderedRow[col] = row[col] || '';
+                });
+                return reorderedRow;
+            });
+
+            processedData = reorderedData;
+            
+            if (processedData.length === 0) {
+                log('⚠️ No data was processed. Check input data for issues.');
+            } else {
+                log(`📊 Processed ${processedData.length} rows successfully`);
+            }
+
+            //log(`📊 Processing Summary:`);
+            //log(`   Original rows: ${csvData.length}`);
+           // log(`   Skipped (DEP==ARR): ${skippedDepArr}`);
+            //log(`   Rows with delays: ${rowsWithDelays}`);
+            //log(`   Rows without delays: ${rowsWithoutDelays}`);
+            //log(`   Rows with delays >15 minutes: ${delayedOver15Min}`);
+            //log(`   Total output rows: ${longData.length}`);
+            //log(`✅ TTL DEP column updated in HH:MM based on DYL Series logic (DLY interpreted as HH:MM or numeric minutes)`);
+            //log(`✅ Status column: "> 15mts Delayed" if TTL DEP > 15min and DYL Series = 1 or SINGLE, else "Ontime" or empty for DYL Series 2, 3, 4, etc.`);
+            //log(`✅ DLY1A column set from DLY1Arr, DLY2A column set from Sub1Arr (empty if not present)`);
+            //log(`✅ TTL ARR column calculated as sum of DLY1A and DLY2A in HH:MM format`);
+            //log(`✅ Weekday column calculated from DATE field`);
+            //log(`✅ DELAY type column: "NAR" if Sub in [A, G, H, L, P, U, W, X], else "AR"`);
+            //log(`✅ CAT column calculated based on TTL DEP: ${['Ontime (<16m)', '16mto30m', '31mto01h', '1hto2h', '2hto4h', '4hto6h', 'Above6hr (>6h)'].join(', ')}`);
+            //log(`✅ Output sorted by DYL Series: SINGLE, then 1, 2, 3, etc.`);
+            
+            return {
+                originalRows: csvData.length,
+                skippedRows: skippedDepArr,
+                rowsWithDelays,
+                rowsWithoutDelays,
+                delayedOver15Min,
+                outputRows: longData.length
+            };
+        }
+
+        function showResults(stats) {
+            const resultsSection = document.getElementById('resultsSection');
+            const statsGrid = document.getElementById('statsGrid');
+            const dataTable = document.getElementById('dataTable');
+            
+            if (!processedData) {
+                showError('No processed data available.');
+                log('❌ No processed data to display');
+                return;
+            }
+
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.originalRows}</div>
+                    <div class="stat-label">Original Rows</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.outputRows}</div>
+                    <div class="stat-label">Processed Rows</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.rowsWithDelays}</div>
+                    <div class="stat-label">Rows with Delays</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.delayedOver15Min}</div>
+                    <div class="stat-label">Delays >15 Minutes</div>
+                </div>
+            `;
+
+            // Prepare download
+            const outputFilename = document.getElementById('outputFilename').value || (originalFilename + '_processed.csv');
+           try {
+                const csv = Papa.unparse(processedData, {
+                    header: true,
+                    skipEmptyLines: false,
+                    quotes: true,
+                    quoteChar: '"',
+                    escapeChar: '"'
+                });
+                
+                if (!csv) {
+                    throw new Error('Failed to generate CSV content');
+                }
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                const downloadButton = document.getElementById('downloadButton');
+                downloadButton.href = url;
+                downloadButton.download = outputFilename;
+                downloadButton.addEventListener('click', () => {
+                    //log(`📥 Download initiated for ${outputFilename}`);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                }, { once: true });
+                
+            } catch (error) {
+                showError('Failed to generate CSV file: ' + error.message);
+                log('❌ Error generating CSV: ' + error.message);
+                return;
+            }
+            resultsSection.classList.add('show');
+        }
+    </script>
+</body>
+</html>
